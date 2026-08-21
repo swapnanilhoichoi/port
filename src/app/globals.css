@@ -1,26 +1,633 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ══════════════════════════════════════════════════════════
+   Design tokens — lifted from the original site's custom
+   properties, exposed to Tailwind so `bg-brand`, `text-ink`,
+   `font-display`, `shadow-card` etc. all just work.
+   ══════════════════════════════════════════════════════════ */
+@theme {
+  --color-ink: #14202b;
+  --color-ink-soft: #4a6173;
+  --color-ink-faint: #8aa6b8;
+  --color-brand: #f0531c;
+  --color-brand-deep: #d2410e;
+  --color-blue: #0d99ff;
+  --color-frame: #ffffff;
+  --color-soft: #f1f6fa;
+  --color-grid: #efeee9;
+  --color-canvas: #afd8f0;
+  --color-line: rgba(20, 32, 43, 0.07);
+  --color-line-2: rgba(20, 32, 43, 0.133);
+
+  --font-display: var(--font-bricolage), sans-serif;
+  --font-body: var(--font-hanken), system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
+  --font-hand: var(--font-shantell), cursive;
+  /* section headings — swap this one line for a licensed face */
+  --font-heading: var(--font-gloock), serif;
+  /* the drag box — swap this one line for a licensed face */
+  --font-deco: var(--font-italiana), serif;
+
+  --shadow-card: 0 20px 50px -32px rgba(20, 19, 16, 0.32);
+  --radius-card: 18px;
+
+  --spacing-rail: 30px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    font-family: var(--font-body);
+    color: var(--color-ink);
+    line-height: 1.45;
+    overflow-x: hidden;
+    background:
+      radial-gradient(130% 95% at 82% -18%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 40%),
+      radial-gradient(120% 80% at 10% 118%, rgba(196, 230, 255, 0.75) 0%, rgba(196, 230, 255, 0) 52%),
+      linear-gradient(#3e97e2 0%, #5eaeea 40%, #86c4ef 76%, #acd8f4 100%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+  body.no-cursor {
+    cursor: none;
+  }
+  ::selection {
+    background: var(--color-brand);
+    color: #fff;
+  }
+  canvas {
+    display: block;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ══════════════════════════════════════════════════════════
+   The handful of things Tailwind can't express cleanly:
+   data-URI artwork, keyframes, mask icons, pseudo-element chips.
+   ══════════════════════════════════════════════════════════ */
+@layer components {
+  /* ── Figma selection handle ── */
+  .handle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #fff;
+    border: 1.4px solid var(--color-blue);
+    border-radius: 2px;
+    z-index: 3;
+  }
+
+  /* ── mono micro-label ── */
+  .lbl {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
+  }
+
+  /* ── loader: a Figma frame being selected ── */
+  .ld-grid {
+    background-image:
+      linear-gradient(rgba(13, 153, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(13, 153, 255, 0.1) 1px, transparent 1px);
+    background-size: 34px 34px;
+    -webkit-mask-image: radial-gradient(120% 90%, #000 38%, transparent 80%);
+    mask-image: radial-gradient(120% 90%, #000 38%, transparent 80%);
+  }
+  .ld-sel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1.5px solid var(--color-blue);
+    clip-path: inset(0 100% 0 0);
+    animation: ldbox 0.6s cubic-bezier(0.6, 0.1, 0.2, 1) 0.5s forwards;
+  }
+  .ld-mark {
+    opacity: 0;
+    animation: ldmark 0.5s ease 0.15s forwards;
+  }
+  .ld-h {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    background: #fff;
+    border: 1.5px solid var(--color-blue);
+    border-radius: 2px;
+    opacity: 0;
+    transform: scale(0.4);
+    animation: ldh 0.25s ease forwards;
+  }
+  .ld-h-tl { left: -5px; top: -5px; animation-delay: 1.05s; }
+  .ld-h-tr { right: -5px; top: -5px; animation-delay: 1.12s; }
+  .ld-h-bl { left: -5px; bottom: -5px; animation-delay: 1.19s; }
+  .ld-h-br { right: -5px; bottom: -5px; animation-delay: 1.26s; }
+  .ld-dim {
+    opacity: 0;
+    animation: lddim 0.3s ease 1.32s forwards;
+  }
+  .ld-fill {
+    width: 0;
+    animation: ldbar 1.6s cubic-bezier(0.5, 0.1, 0.2, 1) 0.25s forwards;
+  }
+
+  /* ── section head: handwritten eyebrow + split heading + sticky note ── */
+  .sec-head {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .scribble {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    line-height: 1;
+    margin-bottom: 6px;
+    color: var(--color-brand);
+  }
+  .scribble .hw {
+    height: 35px;
+    width: auto;
+    display: block;
+    overflow: visible;
+  }
+  /* pathLength="1" makes the draw-on a plain 1 -> 0 dashoffset */
+  .hw-ink {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  .scribble.writing .hw-ink {
+    animation: hwdraw 4.6s cubic-bezier(0.5, 0, 0.5, 1) forwards;
+  }
+  .sec-head h2 {
+    font-family: var(--font-heading);
+    font-weight: 400;
+    font-size: clamp(42px, 6.6vw, 84px);
+    letter-spacing: -0.015em;
+    line-height: 0.98;
+    /* the whole point of this face is its lowercase — uppercase throws away
+       the swooping 'a' and the blade terminals */
+    text-transform: none;
+    color: var(--color-ink);
+  }
+  .sec-head h2 .o {
+    color: var(--color-brand);
+  }
+  .sec-head .note {
+    display: inline-block;
+    margin-top: 16px;
+    background: #fbe9cf;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 9px 16px;
+    border-radius: 6px;
+    transform: rotate(-1.2deg);
+    box-shadow: 0 8px 20px -12px rgba(20, 19, 16, 0.2);
+  }
+  /* per-letter magnetic lift */
+  .word {
+    display: inline-block;
+  }
+  .ltr {
+    display: inline-block;
+    transition: transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* ── eyebrow in text mode, when no traced stroke exists for the phrase ── */
+  .hw-text {
+    font-family: var(--font-hand);
+    font-size: 26px;
+    line-height: 1.15;
+    color: var(--color-brand);
+    white-space: nowrap;
+    clip-path: inset(0 100% 0 0);
+  }
+  .scribble.writing .hw-text {
+    animation: hwtext 1.5s cubic-bezier(0.5, 0, 0.5, 1) forwards;
+  }
+
+  /* ── clouds ── */
+  .cloud {
+    position: absolute;
+    left: 0;
+    display: block;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    /* the softness is a feGaussianBlur inside the SVG, not a CSS blur */
+    filter: drop-shadow(0 12px 18px rgba(90, 140, 190, 0.18));
+    will-change: transform;
+    animation-name: drift;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+  .cloud-a {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 340 170'%3E%3Cdefs%3E%3CradialGradient id='ga' cx='50%25' cy='34%25' r='72%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff'/%3E%3Cstop offset='62%25' stop-color='%23fbfdff'/%3E%3Cstop offset='100%25' stop-color='%23e6f0fb'/%3E%3C/radialGradient%3E%3Cfilter id='ba' x='-35%25' y='-35%25' width='170%25' height='170%25'%3E%3CfeGaussianBlur stdDeviation='9'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url%28%23ba%29' fill='url%28%23ga%29'%3E%3Cellipse cx='170' cy='118' rx='128' ry='30'/%3E%3Ccircle cx='100' cy='94' r='34'/%3E%3Ccircle cx='156' cy='70' r='50'/%3E%3Ccircle cx='214' cy='86' r='40'/%3E%3Ccircle cx='262' cy='104' r='28'/%3E%3C/g%3E%3C/svg%3E");
+  }
+  .cloud-b {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 380 140'%3E%3Cdefs%3E%3CradialGradient id='gb' cx='50%25' cy='34%25' r='72%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff'/%3E%3Cstop offset='62%25' stop-color='%23fbfdff'/%3E%3Cstop offset='100%25' stop-color='%23e6f0fb'/%3E%3C/radialGradient%3E%3Cfilter id='bb' x='-35%25' y='-35%25' width='170%25' height='170%25'%3E%3CfeGaussianBlur stdDeviation='10'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url%28%23bb%29' fill='url%28%23gb%29'%3E%3Cellipse cx='190' cy='98' rx='160' ry='26'/%3E%3Ccircle cx='120' cy='80' r='30'/%3E%3Ccircle cx='186' cy='62' r='44'/%3E%3Ccircle cx='246' cy='78' r='34'/%3E%3Ccircle cx='292' cy='90' r='24'/%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  /* ── film grain ── */
+  .grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+  }
+
+  /* ── the studio's eyes mark ── */
+  .om-mark {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M21.5 10.5C21.5 7.6 10.5 7.2 10.5 12.4C10.5 16.6 21.5 15.6 21.5 20.6C21.5 25.8 10.5 25.4 10.5 22.2' fill='none' stroke='%23ffffff' stroke-width='3.1' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-size: 100% 100%;
+  }
+  .om-mark-dark {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M21.5 10.5C21.5 7.6 10.5 7.2 10.5 12.4C10.5 16.6 21.5 15.6 21.5 20.6C21.5 25.8 10.5 25.4 10.5 22.2' fill='none' stroke='%23000000' stroke-width='3.1' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-size: 100% 100%;
+  }
+  .om-mark-ink {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M21.5 10.5C21.5 7.6 10.5 7.2 10.5 12.4C10.5 16.6 21.5 15.6 21.5 20.6C21.5 25.8 10.5 25.4 10.5 22.2' fill='none' stroke='%23ffffff' stroke-width='3.1' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-size: 100% 100%;
+  }
+
+  /* ── card "layer name" chip, revealed on hover ── */
+  .layer-chip::before {
+    content: attr(data-layer);
+    position: absolute;
+    left: 14px;
+    top: 10px;
+    z-index: 4;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    background: var(--color-blue);
+    color: #fff;
+    padding: 3px 8px 3px 20px;
+    border-radius: 5px;
+    box-shadow: 0 6px 16px -10px rgba(20, 32, 43, 0.7);
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect x='2.2' y='2.2' width='7.6' height='7.6' rx='1.4' fill='none' stroke='%23fff' stroke-width='1.3'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 6px 50%;
+    background-size: 11px 11px;
+  }
+  .layer-chip:hover::before {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ── capability chips: icon via mask so it inherits colour ── */
+  .cap::before {
+    content: "";
+    width: 17px;
+    height: 17px;
+    flex: 0 0 17px;
+    background: currentColor;
+    -webkit-mask: var(--ic) center / contain no-repeat;
+    mask: var(--ic) center / contain no-repeat;
+  }
+
+  /* ── ticked feature list ── */
+  .tick::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    background: rgba(240, 83, 28, 0.1);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M4.6 9.4l2.9 2.9L13.4 6.4' fill='none' stroke='%23F0531C' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-size: 100% 100%;
+  }
+  .tick-on::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 5px;
+    background: var(--color-brand);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.4l2.6 2.6L12 5.4' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-size: 100% 100%;
+  }
+  .tick-off::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 5px;
+    border: 1.5px solid rgba(20, 32, 43, 0.18);
+  }
+
+  /* ── traffic lights on the fake app window ── */
+  .traffic {
+    background:
+      radial-gradient(circle 5.5px at 5.5px 5.5px, #e1554d 96%, transparent),
+      radial-gradient(circle 5.5px at 22px 5.5px, #e9b44c 96%, transparent),
+      radial-gradient(circle 5.5px at 38.5px 5.5px, #4cb963 96%, transparent);
+  }
+
+  /* ── services accordion chevron ── */
+  .chev::after {
+    content: "";
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--color-brand);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-size: 100% 100%;
+    transition: transform 0.3s ease;
+  }
+
+  /* ── buttons ── */
+  .btn-primary,
+  .btn-ghost {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    height: 46px;
+    padding: 0 22px;
+    border-radius: 9px;
+    font-size: 15.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 0.18s ease, background 0.2s ease, color 0.2s ease;
+  }
+  /* ── the moulded glass CTA ──────────────────────────────────────────
+     Three layers, built without adding markup so every existing
+     .btn-primary picks it up:
+
+       element  the bezel — a conic gradient so brightness varies round
+                the perimeter the way a real chamfer catches light
+       ::before the body, inset by the bezel width
+       ::after  the gloss sweeping the top half
+
+     Both pseudo-elements sit at z-index -1 inside the button's own
+     stacking context (isolation: isolate), which puts them above the
+     element background but still behind the label.                   */
+  .btn-primary {
+    isolation: isolate;
+    color: #fff;
+    font-weight: 700;
+    background: conic-gradient(
+      from 0deg at 50% 50%,
+      #fff4dc 0deg,
+      #ffab5c 26deg,
+      #a82400 74deg,
+      #e0450a 118deg,
+      #ffc07a 156deg,
+      #fff8e6 182deg,
+      #ff9440 208deg,
+      #9e2000 252deg,
+      #ffe0ae 292deg,
+      #ff8a34 328deg,
+      #fff4dc 360deg
+    );
+    /* white face, warm extrude falling away beneath it */
+    text-shadow:
+      0 -1px 0 rgba(255, 255, 255, 0.62),
+      0 1px 0 #ea5620,
+      0 2px 0 #c63f0b,
+      0 3px 5px rgba(78, 22, 0, 0.52);
+    box-shadow:
+      0 14px 28px -10px rgba(206, 58, 8, 0.85),
+      0 0 36px rgba(255, 130, 48, 0.5);
+  }
+  .btn-primary::before {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    z-index: -1;
+    border-radius: 5px;
+    background: linear-gradient(180deg, #fb6229 0%, #f24e18 45%, #d63700 100%);
+    box-shadow:
+      inset 0 0 0 1px rgba(146, 38, 0, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55),
+      inset 0 -10px 16px -9px rgba(120, 30, 0, 0.68);
+    transition: filter 0.2s ease;
+  }
+  .btn-primary::after {
+    content: "";
+    position: absolute;
+    inset: 5px 5px auto 5px;
+    height: 44%;
+    z-index: -1;
+    border-radius: 4px 4px 50% 50% / 4px 4px 16px 16px;
+    background: linear-gradient(
+      164deg,
+      rgba(255, 255, 255, 0.8) 0%,
+      rgba(255, 255, 255, 0.44) 30%,
+      rgba(255, 255, 255, 0.12) 68%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 19px 34px -10px rgba(206, 58, 8, 0.88),
+      0 0 42px rgba(255, 138, 58, 0.6);
+  }
+  .btn-primary:hover::before {
+    filter: brightness(1.07);
+  }
+  .btn-primary:active {
+    transform: translateY(1px) scale(0.99);
+    text-shadow:
+      0 -1px 0 rgba(255, 255, 255, 0.45),
+      0 1px 0 #c63f0b,
+      0 2px 4px rgba(78, 22, 0, 0.5);
+  }
+  .btn-ghost {
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--color-ink);
+    border: 1px solid var(--color-line-2);
+    box-shadow: 0 10px 26px -20px rgba(20, 32, 43, 0.6);
+  }
+  .btn-ghost:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-ink);
+  }
+  .btn-lg {
+    height: 52px;
+    padding: 0 26px;
+    font-size: 16.5px;
+  }
+  .arrow {
+    transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .btn-primary:hover .arrow,
+  .btn-ghost:hover .arrow {
+    transform: translateX(4px);
+  }
+
+  /* ── section headings ── */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-brand);
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .eyebrow-hand {
+    font-family: var(--font-hand);
+    font-size: 21px;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--color-brand);
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .h-big {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(46px, 5.6vw, 78px);
+    line-height: 0.93;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .h-mid {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(28px, 3.4vw, 44px);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    text-align: center;
+  }
+  .h-alt {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(38px, 5.4vw, 74px);
+    line-height: 0.96;
+    letter-spacing: -0.03em;
+    text-align: center;
+  }
+
+  /* ── the standard white card ── */
+  .card {
+    position: relative;
+    background: var(--color-frame);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* ── reveal-on-scroll ── */
+  .rv {
+    opacity: 0;
+    transform: translateY(26px);
+    filter: blur(8px);
+    transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+      transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), filter 0.7s;
+  }
+  .rv-in {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes ldbox {
+  100% {
+    clip-path: inset(0);
+  }
+}
+@keyframes ldmark {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ldh {
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes lddim {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%);
+  }
+}
+@keyframes ldbar {
+  100% {
+    width: 100%;
+  }
+}
+@keyframes hwtext {
+  to {
+    clip-path: inset(0);
+  }
+}
+@keyframes hwdraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes drift {
+  0% {
+    transform: translateX(-42vw);
+  }
+  100% {
+    transform: translateX(132vw);
+  }
+}
+@keyframes blip {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes typing {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.animate-blip {
+  animation: blip 2s ease-in-out infinite;
+}
+.animate-typing {
+  animation: typing 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud {
+    animation: none;
+  }
+  .rv {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
